@@ -69,7 +69,8 @@ const sendErrorProd = (err, res) => {
 
 const errorHandler = (err, req, res, next) => { 
 
-
+ console.error('STACK TRACE:\n', err.stack); 
+ 
   err.statusCode = err.statusCode || 500;
   err.code       = err.code       || 'INTERNAL_ERROR';
 
