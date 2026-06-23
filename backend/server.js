@@ -15,6 +15,7 @@ const morgan  = require('morgan');
  
 const { generalLimiter } = require('./middleware/rateLimiter');
 const errorHandler        = require('./middleware/errorHandler');
+ const authRoutes = require('./routes/authRoutes');
 
  
 const app = express();
@@ -55,8 +56,11 @@ if (!env.IS_TEST) {
   app.use(morgan('dev'));
 }
 
- 
+
+
 app.use('/api/v1', generalLimiter);
+app.use('/api/v1/auth', authRoutes);
+
 
  
 app.get('/api/v1/health', (req, res) => {
