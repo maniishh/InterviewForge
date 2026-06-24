@@ -41,6 +41,8 @@ const env = {
   // Rate limiting
   RATE_LIMIT_WINDOW_MS: Number(getEnv('RATE_LIMIT_WINDOW_MS', { defaultValue: '900000' })),
   RATE_LIMIT_MAX:       Number(getEnv('RATE_LIMIT_MAX',        { defaultValue: '100'    })),
+
+  USE_AI_MOCK: getEnv('USE_AI_MOCK', { required: false, defaultValue: 'false' }),
 };
 
 
