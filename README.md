@@ -264,20 +264,6 @@ GET  /api/interview/history
 * Personalized learning roadmap
 
 ---
-
-## 📸 Screenshots
-
-Add project screenshots here.
-
-Example:
-
-* Login Page
-* Dashboard
-* Interview Room
-* Feedback Page
-
----
-
 ## 💡 Challenges Solved
 
 * Designing scalable backend architecture
