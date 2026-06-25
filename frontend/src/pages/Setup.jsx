@@ -288,8 +288,7 @@ const Setup = () => {
           </Card>
 
           {/* Submit */}
-         // frontend/src/pages/Setup.jsx
-// Replace the Button at the bottom with this:
+        
 
 <Button
   type="submit"

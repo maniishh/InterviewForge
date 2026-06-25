@@ -100,14 +100,9 @@ async callGemini(messages, options = {}) {
     return this.callOpenAI(messages, options);
   }
 
-  // ─── SECTION 3: GENERATE QUESTIONS ───────────────────────────────────────
-  /*
-   * Called by: interviewController.startInterview()
-   * Returns:   array of question objects ready to save to MongoDB
-   */
   async generateQuestions({ company, jobRole, difficulty, count = 5 }) {
 
-    // MOCK MODE — bypasses real AI, no rate limits, instant response
+    
     if (env.USE_AI_MOCK === 'true') {
       return [
         {
