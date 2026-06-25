@@ -1,7 +1,7 @@
 // backend/services/aiService.js
 'use strict';
 
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenAI } = require("@google/genai");
 
 const env            = require('../config/env');
 const promptBuilder  = require('../utils/promptBuilder');
@@ -33,28 +33,29 @@ async callGemini(messages, options = {}) {
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const model = this.gemini.getGenerativeModel({
-        model: 'gemini-2.0-flash',
-        generationConfig: {
-          temperature:      options.temperature ?? 0.7,
-          maxOutputTokens:  options.max_tokens  ?? 2000,
-          responseMimeType: 'application/json',
-        },
-      });
+    const systemMessage = messages.find(m => m.role === 'system');
+const userMessages  = messages.filter(m => m.role !== 'system');
+const lastUserMessage = userMessages[userMessages.length - 1];
 
-      const systemMessage = messages.find(m => m.role === 'system');
-      const userMessages  = messages.filter(m => m.role !== 'system');
+let prompt = '';
 
-      const chat = model.startChat({
-        systemInstruction: systemMessage
-          ? { parts: [{ text: systemMessage.content }] }
-          : undefined,
-        history: [],
-      });
+if (systemMessage) {
+  prompt += systemMessage.content + '\n\n';
+}
 
-      const lastUserMessage = userMessages[userMessages.length - 1];
-      const result = await chat.sendMessage(lastUserMessage.content);
-      return result.response.text();
+prompt += lastUserMessage.content;
+
+const result = await this.gemini.models.generateContent({
+  model: 'gemini-2.0-flash',
+  contents: prompt,
+  config: {
+    temperature: options.temperature ?? 0.7,
+    maxOutputTokens: options.max_tokens ?? 2000,
+    responseMimeType: 'application/json',
+  },
+});
+
+return result.text;
 
     } catch (error) {
       const isRateLimit = error.status === 429 ||
