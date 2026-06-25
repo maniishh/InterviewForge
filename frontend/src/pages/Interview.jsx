@@ -1,8 +1,314 @@
+// src/pages/Interview.jsx
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  ChevronLeft, ChevronRight, Send, CheckCircle2,
+  Clock, AlertCircle, Lightbulb, Flag
+} from 'lucide-react';
+import useInterview from '../hooks/useInterview';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
+import Badge from '../components/ui/Badge';
+import ScoreRing from '../components/ui/ScoreRing';
+
+const TYPE_CONFIG = {
+  technical:      { label: 'Technical',     color: 'technical',     hint: 'Focus on correctness, complexity, and edge cases.' },
+  behavioral:     { label: 'Behavioral',    color: 'behavioral',    hint: 'Use the STAR format: Situation, Task, Action, Result.' },
+  'system-design':{ label: 'System Design', color: 'system-design', hint: 'Clarify requirements, then design for scale and reliability.' },
+};
+
 const Interview = () => {
+  const navigate  = useNavigate();
+  const textareaRef = useRef(null);
+  const {
+    questions, currentIndex, currentQuestion, currentAnswer,
+    currentEvaluation, isLastQuestion, answeredCount, allAnswered,
+    progress, isSubmitting, isCompleting,
+    submitAnswer, goToNext, goToPrev, completeInterview,
+    sessionId,
+  } = useInterview();
+
+  const [draft,       setDraft]       = useState('');
+  const [submitted,   setSubmitted]   = useState(false);
+  const [timeSeconds, setTimeSeconds] = useState(0);
+
+  /* Redirect if no session */
+  useEffect(() => {
+    if (!sessionId && questions.length === 0) {
+      navigate('/setup');
+    }
+  }, [sessionId, questions.length, navigate]);
+
+  /* Timer */
+  useEffect(() => {
+    const t = setInterval(() => setTimeSeconds(s => s + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  /* Reset draft when question changes */
+  useEffect(() => {
+    setDraft(currentAnswer || '');
+    setSubmitted(!!currentEvaluation);
+    textareaRef.current?.focus();
+  }, [currentIndex, currentAnswer, currentEvaluation]);
+
+  const formatTime = (s) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  const handleSubmit = async () => {
+    if (!draft.trim() || submitted) return;
+    const result = await submitAnswer(draft);
+    if (result) setSubmitted(true);
+  };
+
+  const handleNext = () => {
+    setSubmitted(false);
+    goToNext();
+  };
+
+  if (!currentQuestion) return null;
+
+  const typeConfig = TYPE_CONFIG[currentQuestion.type] || TYPE_CONFIG.technical;
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0A0A0F]">
-      <h1 className="text-3xl font-bold text-[#6C63FF]">Interview Page — Coming Soon</h1>
+    <div className="min-h-screen bg-base">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+
+        {/* ── TOP BAR ── */}
+        <div className="flex items-center justify-between mb-8 animate-fade-in">
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-text-muted font-medium">
+              Question{' '}
+              <span className="text-text-primary font-bold font-mono">
+                {currentIndex + 1}
+              </span>
+              <span className="text-text-muted"> / {questions.length}</span>
+            </span>
+            <Badge variant={typeConfig.color}>{typeConfig.label}</Badge>
+            <Badge variant="default">{currentQuestion.category}</Badge>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5 text-text-muted text-sm font-mono">
+              <Clock size={14} />
+              {formatTime(timeSeconds)}
+            </div>
+            <div className="text-sm text-text-muted">
+              <span className="text-success font-medium">{answeredCount}</span>
+              /{questions.length} answered
+            </div>
+          </div>
+        </div>
+
+        {/* ── PROGRESS BAR ── */}
+        <div className="h-1 bg-elevated rounded-full mb-8 overflow-hidden">
+          <div
+            className="h-full bg-accent rounded-full transition-all duration-700"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
+        {/* ── QUESTION CARD ── */}
+        <Card className="p-8 mb-6 animate-slide-up">
+          <div className="flex items-start gap-3 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20
+                            flex items-center justify-center flex-shrink-0 mt-0.5">
+              <span className="text-accent font-mono font-bold text-sm">
+                Q{currentIndex + 1}
+              </span>
+            </div>
+            <div className="flex-1">
+              <p className="text-lg font-semibold text-text-primary leading-relaxed">
+                {currentQuestion.text}
+              </p>
+            </div>
+          </div>
+
+          {/* Hint */}
+          <div className="mt-4 p-3 rounded-lg bg-elevated border border-border
+                          flex items-start gap-2">
+            <Lightbulb size={14} className="text-warning flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-text-muted">{typeConfig.hint}</p>
+          </div>
+        </Card>
+
+        {/* ── ANSWER AREA ── */}
+        <Card className="p-6 mb-6 animate-slide-up">
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-sm font-semibold text-text-primary">
+              Your Answer
+            </label>
+            <span className={`text-xs font-mono transition-colors
+                             ${draft.length > 4500 ? 'text-danger' : 'text-text-muted'}`}>
+              {draft.length} / 5000
+            </span>
+          </div>
+
+          <textarea
+            ref={textareaRef}
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            disabled={submitted}
+            rows={8}
+            maxLength={5000}
+            placeholder={
+              currentQuestion.type === 'behavioral'
+                ? 'Describe the Situation → Task → Action → Result...'
+                : currentQuestion.type === 'system-design'
+                ? 'Start with requirements, then high-level design, then components...'
+                : 'Explain your approach, algorithm, and complexity...'
+            }
+            className={`
+              w-full bg-elevated border border-border rounded-xl px-4 py-3
+              text-text-primary placeholder-text-muted text-sm font-sans
+              resize-none outline-none transition-all duration-200 leading-relaxed
+              ${submitted
+                ? 'opacity-60 cursor-not-allowed'
+                : 'focus:border-accent focus:ring-2 focus:ring-accent/10'
+              }
+            `}
+          />
+
+          {/* Submit button */}
+          {!submitted && (
+            <div className="flex items-center justify-between mt-4">
+              <p className="text-xs text-text-muted">
+                {draft.trim().length < 20 && draft.length > 0
+                  ? '⚠ Add more detail for a better evaluation'
+                  : draft.trim() ? '✓ Ready to evaluate' : 'Write your answer above'}
+              </p>
+              <Button
+                onClick={handleSubmit}
+                isLoading={isSubmitting}
+                loadingText="Evaluating..."
+                disabled={!draft.trim() || isSubmitting}
+                leftIcon={<Send size={14} />}
+              >
+                Submit & Evaluate
+              </Button>
+            </div>
+          )}
+
+          {submitted && (
+            <div className="flex items-center gap-2 mt-3 text-success text-sm">
+              <CheckCircle2 size={16} />
+              Answer submitted — see feedback below
+            </div>
+          )}
+        </Card>
+
+        {/* ── EVALUATION PANEL ── */}
+        {currentEvaluation && (
+          <Card className="p-6 mb-6 border-success/20 animate-slide-up" elevated>
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-2 h-2 rounded-full bg-success" />
+              <h3 className="font-semibold text-text-primary">AI Evaluation</h3>
+            </div>
+
+            {/* Score rings */}
+            <div className="grid grid-cols-4 gap-4 mb-6 pb-6 border-b border-border">
+              <ScoreRing score={currentEvaluation.technicalScore     || 0} size={90} label="Technical" />
+              <ScoreRing score={currentEvaluation.communicationScore || 0} size={90} label="Communication" />
+              <ScoreRing score={currentEvaluation.depthScore         || 0} size={90} label="Depth" />
+              <ScoreRing score={currentEvaluation.overallScore       || 0} size={90} label="Overall" />
+            </div>
+
+            {/* Feedback sections */}
+            <div className="space-y-4">
+              {[
+                { icon: AlertCircle, label: 'Feedback',     color: '#6C63FF', text: currentEvaluation.feedback },
+                { icon: CheckCircle2,label: 'Strengths',    color: '#00D9A3', text: currentEvaluation.strengths },
+                { icon: Lightbulb,   label: 'Improvements', color: '#FFB547', text: currentEvaluation.improvements },
+              ].map(({ icon: Icon, label, color, text }) => text && (
+                <div key={label} className="flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                       style={{ background: `${color}15` }}>
+                    <Icon size={14} style={{ color }} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider mb-1"
+                       style={{ color }}>
+                      {label}
+                    </p>
+                    <p className="text-sm text-text-muted leading-relaxed">{text}</p>
+                  </div>
+                </div>
+              ))}
+
+              {currentEvaluation.suggestedAnswer && (
+                <div className="mt-4 p-4 rounded-xl bg-elevated border border-border">
+                  <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
+                    💡 Ideal Answer Outline
+                  </p>
+                  <p className="text-sm text-text-primary leading-relaxed">
+                    {currentEvaluation.suggestedAnswer}
+                  </p>
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
+
+        {/* ── NAVIGATION ── */}
+        <div className="flex items-center justify-between animate-fade-in">
+          <Button
+            variant="secondary"
+            onClick={goToPrev}
+            disabled={currentIndex === 0}
+            leftIcon={<ChevronLeft size={16} />}
+          >
+            Previous
+          </Button>
+
+          <div className="flex gap-1.5">
+            {questions.map((_, i) => (
+              <div
+                key={i}
+                className="w-2 h-2 rounded-full transition-all duration-300"
+                style={{
+                  background: i === currentIndex
+                    ? '#6C63FF'
+                    : i < currentIndex
+                    ? '#00D9A3'
+                    : '#1E1E2E',
+                  transform: i === currentIndex ? 'scale(1.3)' : 'scale(1)',
+                }}
+              />
+            ))}
+          </div>
+
+          {isLastQuestion ? (
+            allAnswered ? (
+              <Button
+                onClick={completeInterview}
+                isLoading={isCompleting}
+                loadingText="Finishing..."
+                leftIcon={<Flag size={16} />}
+                className="bg-success hover:bg-success/80"
+              >
+                Finish Interview
+              </Button>
+            ) : (
+              <Button variant="secondary" disabled>
+                Answer all questions first
+              </Button>
+            )
+          ) : (
+            <Button
+              onClick={handleNext}
+              disabled={!submitted}
+              rightIcon={<ChevronRight size={16} />}
+            >
+              Next Question
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
+
 export default Interview;

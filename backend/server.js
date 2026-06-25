@@ -17,6 +17,7 @@ const { generalLimiter } = require('./middleware/rateLimiter');
 const errorHandler        = require('./middleware/errorHandler');
  const authRoutes = require('./routes/authRoutes');
 const interviewRoutes = require('./routes/interviewRoutes');
+const historyRoutes = require('./routes/historyRoutes');
  
 const app = express();
 
@@ -61,6 +62,7 @@ if (!env.IS_TEST) {
 app.use('/api/v1', generalLimiter);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/interviews', interviewRoutes);
+app.use('/api/v1/history', historyRoutes);
 
 
  
