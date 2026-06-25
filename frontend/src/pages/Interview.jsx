@@ -32,12 +32,14 @@ const Interview = () => {
   const [submitted,   setSubmitted]   = useState(false);
   const [timeSeconds, setTimeSeconds] = useState(0);
 
-  /* Redirect if no session */
-  useEffect(() => {
-    if (!sessionId && questions.length === 0) {
-      navigate('/setup');
-    }
-  }, [sessionId, questions.length, navigate]);
+  
+ useEffect(() => {
+  
+  const saved = sessionStorage.getItem('interviewforge_session');
+  if (!sessionId && !saved && questions.length === 0) {
+    navigate('/setup');
+  }
+}, []); 
 
   /* Timer */
   useEffect(() => {
