@@ -32,21 +32,10 @@ const allowedOrigins = env.IS_PRODUCTION
       'https://interview-forge-omega.vercel.app',  
     ]
   : ['http://localhost:5173', 'http://localhost:3000'];
-
 app.use(cors({
-  origin: (origin, callback) => {
-  
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS policy: origin ${origin} is not allowed`));
-    }
-  },
-  credentials: true,   
-  methods:     ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: true,
+  credentials: true
 }));
-
  
 app.use(express.json({ limit: '10kb' }));
 
