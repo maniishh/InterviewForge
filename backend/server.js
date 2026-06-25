@@ -29,7 +29,7 @@ app.use(helmet());
 
 const allowedOrigins = env.IS_PRODUCTION
   ? [
-      'interview-forge-omega.vercel.app',          
+      'https://interview-forge-omega.vercel.app',  
     ]
   : ['http://localhost:5173', 'http://localhost:3000'];
 
