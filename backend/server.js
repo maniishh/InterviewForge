@@ -27,9 +27,11 @@ connectDB();
  
 app.use(helmet());
 
- 
 const allowedOrigins = env.IS_PRODUCTION
-  ? ['https://your-production-frontend.com']    
+  ? [
+      'https://interviewforge.vercel.app',   
+      'https://your-custom-domain.com',        
+    ]
   : ['http://localhost:5173', 'http://localhost:3000'];
 
 app.use(cors({
