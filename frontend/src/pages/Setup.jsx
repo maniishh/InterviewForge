@@ -288,16 +288,24 @@ const Setup = () => {
           </Card>
 
           {/* Submit */}
-          <Button
-            type="submit"
-            className="w-full py-4 text-base"
-            size="lg"
-            isLoading={isStarting}
-            loadingText="Generating your questions with AI..."
-            rightIcon={<ChevronRight size={18} />}
-          >
-            Start Interview
-          </Button>
+         // frontend/src/pages/Setup.jsx
+// Replace the Button at the bottom with this:
+
+<Button
+  type="submit"
+  className="w-full py-4 text-base"
+  size="lg"
+  isLoading={isStarting}
+  loadingText="Generating questions... (may take up to 60 seconds)"
+  rightIcon={<ChevronRight size={18} />}
+>
+  Start Interview
+</Button>
+
+{/* Add this below the button */}
+<p className="text-center text-xs text-text-muted mt-3">
+  First load may take 30–60 seconds while AI generates your questions
+</p>
         </form>
       </div>
     </div>
