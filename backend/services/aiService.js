@@ -1,7 +1,7 @@
 // backend/services/aiService.js
 'use strict';
 
-const { GoogleGenAI } = require("@google/genai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const env            = require('../config/env');
 const promptBuilder  = require('../utils/promptBuilder');
@@ -29,12 +29,11 @@ class AIService {
 
 async callGemini(messages, options = {}) {
   const maxRetries = 3;
-  const delays     = [5000, 15000, 30000]; // wait 5s, 15s, 30s between retries
-
+  const delays     = [5000, 15000, 30000]; 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const model = this.gemini.getGenerativeModel({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-1.0-pro',
         generationConfig: {
           temperature:      options.temperature ?? 0.7,
           maxOutputTokens:  options.max_tokens  ?? 2000,
