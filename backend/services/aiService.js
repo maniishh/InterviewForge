@@ -25,8 +25,13 @@ class AIService {
     console.log(`✅  AI Service initialised with provider: ${this.provider}`);
   }
 
-  // ─── SECTION 2: LOW-LEVEL API CALLERS ────────────────────────────────────
-  async callGemini(messages, options = {}) {
+
+
+async callGemini(messages, options = {}) {
+  const maxRetries = 3;
+  const delays     = [5000, 15000, 30000]; // wait 5s, 15s, 30s between retries
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const model = this.gemini.getGenerativeModel({
         model: 'gemini-2.0-flash',
@@ -52,12 +57,26 @@ class AIService {
       return result.response.text();
 
     } catch (error) {
-      if (error.status === 429) throw AppError.tooMany('Gemini rate limit exceeded. Please wait.');
-      if (error.status === 400) throw AppError.badRequest(`Gemini bad request: ${error.message}`);
+      const isRateLimit = error.status === 429 ||
+                          error.message?.includes('429') ||
+                          error.message?.includes('quota') ||
+                          error.message?.includes('rate');
+
+      if (isRateLimit && attempt < maxRetries) {
+        console.log(`Gemini rate limit hit. Retrying in ${delays[attempt]/1000}s... (attempt ${attempt + 1}/${maxRetries})`);
+        await new Promise(r => setTimeout(r, delays[attempt]));
+        continue;
+      }
+
+      if (isRateLimit) {
+        throw AppError.tooMany('AI rate limit reached. Please wait 1 minute and try again.');
+      }
+      if (error.status === 400) throw AppError.badRequest(`Gemini error: ${error.message}`);
       if (error.status === 403) throw AppError.unauthorized('Invalid Gemini API key.');
       throw AppError.internal(`Gemini error: ${error.message}`);
     }
   }
+}
 
   async callOpenAI(messages, options = {}) {
     try {
