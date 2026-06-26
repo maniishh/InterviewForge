@@ -33,7 +33,7 @@ async callGemini(messages, options = {}) {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const model = this.gemini.getGenerativeModel({
-        model: 'gemini-1.0-pro',
+        model: 'gemini-1.5-flash',
         generationConfig: {
           temperature:      options.temperature ?? 0.7,
           maxOutputTokens:  options.max_tokens  ?? 2000,
@@ -56,24 +56,32 @@ async callGemini(messages, options = {}) {
       return result.response.text();
 
     } catch (error) {
-      const isRateLimit = error.status === 429 ||
-                          error.message?.includes('429') ||
-                          error.message?.includes('quota') ||
-                          error.message?.includes('rate');
+  console.log("===== GEMINI ERROR =====");
+  console.log({
+    status: error.status,
+    message: error.message,
+    error
+  });
 
-      if (isRateLimit && attempt < maxRetries) {
-        console.log(`Gemini rate limit hit. Retrying in ${delays[attempt]/1000}s... (attempt ${attempt + 1}/${maxRetries})`);
-        await new Promise(r => setTimeout(r, delays[attempt]));
-        continue;
-      }
+  const isRateLimit = error.status === 429 ||
+                      error.message?.includes('429') ||
+                      error.message?.includes('quota') ||
+                      error.message?.includes('rate');
 
-      if (isRateLimit) {
-        throw AppError.tooMany('AI rate limit reached. Please wait 1 minute and try again.');
-      }
-      if (error.status === 400) throw AppError.badRequest(`Gemini error: ${error.message}`);
-      if (error.status === 403) throw AppError.unauthorized('Invalid Gemini API key.');
-      throw AppError.internal(`Gemini error: ${error.message}`);
-    }
+  if (isRateLimit && attempt < maxRetries - 1) {
+    console.log(`Gemini rate limit hit. Retrying in ${delays[attempt]/1000}s...`);
+    await new Promise(r => setTimeout(r, delays[attempt]));
+    continue;
+  }
+
+  if (isRateLimit) {
+    throw AppError.tooMany('AI rate limit reached. Please wait 1 minute and try again.');
+  }
+
+  if (error.status === 400) throw AppError.badRequest(`Gemini error: ${error.message}`);
+  if (error.status === 403) throw AppError.unauthorized('Invalid Gemini API key.');
+  throw AppError.internal(`Gemini error: ${error.message}`);
+}
   }
 }
 
@@ -147,7 +155,7 @@ async callGemini(messages, options = {}) {
 
     const raw = await this.call(messages, {
       temperature: 0.8,
-      max_tokens:  2000,
+      max_tokens:  700,
     });
 
     return responseParser.parseQuestions(raw);
