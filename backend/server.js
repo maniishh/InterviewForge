@@ -18,6 +18,8 @@ const errorHandler        = require('./middleware/errorHandler');
  const authRoutes = require('./routes/authRoutes');
 const interviewRoutes = require('./routes/interviewRoutes');
 const historyRoutes = require('./routes/historyRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
+
  
 const app = express();
  
@@ -52,6 +54,7 @@ app.use('/api/v1', generalLimiter);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/interviews', interviewRoutes);
 app.use('/api/v1/history', historyRoutes);
+app.use('/api/v1/analytics', analyticsRoutes);
 
 
  
