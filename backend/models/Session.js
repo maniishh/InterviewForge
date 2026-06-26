@@ -96,9 +96,31 @@ const sessionSchema = new mongoose.Schema(
     avgCommunicationScore: { type: Number, min: 0, max: 10 },
     avgDepthScore: { type: Number, min: 0, max: 10 },
 
+    weakTopics: {
+  type:    [String],
+  default: [],
+    },
+    strongTopics: {
+  type:    [String],
+  default: [],
+  // Topics where user scored >= 7.0 — stored same reason as weakTopics
+},
+
+storedDurationMinutes: {
+  type: Number,
+},
+
+questionTypeCount: {
+  technical:    { type: Number, default: 0 },
+  behavioral:   { type: Number, default: 0 },
+  systemDesign: { type: Number, default: 0 },
+},
+
     startedAt: { type: Date, default: Date.now },
     completedAt: { type: Date },
   },
+
+  
   {
     timestamps: true,
     toJSON: {
@@ -114,10 +136,13 @@ const sessionSchema = new mongoose.Schema(
 );
 
 sessionSchema.index({ userId: 1, status: 1, createdAt: -1 });
+sessionSchema.index({ userId: 1, weakTopics:   1 });
+sessionSchema.index({ userId: 1, strongTopics: 1 });
 
 sessionSchema.virtual('durationMinutes').get(function () {
   if (!this.completedAt || !this.startedAt) return null;
   return Math.round((this.completedAt - this.startedAt) / 60000);
 });
+
 
 module.exports = mongoose.model('Session', sessionSchema);

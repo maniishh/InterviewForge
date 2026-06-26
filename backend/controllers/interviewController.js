@@ -115,6 +115,7 @@ res.status(200).json({
 });
 
 
+
 exports.completeInterview = asyncHandler(async (req, res) => {
   const { id: sessionId } = req.params;
 
@@ -123,34 +124,64 @@ exports.completeInterview = asyncHandler(async (req, res) => {
     userId: req.user._id,
   });
 
-  if (!session)                        throw AppError.notFound('Interview session not found');
-  if (session.status === 'completed')  throw AppError.badRequest('Session already completed');
+  if (!session)                       throw AppError.notFound('Interview session not found');
+  if (session.status === 'completed') throw AppError.badRequest('Session already completed');
 
   const evals = session.evaluations;
 
- const avg = (arr, key) => {
+  
+  
+  const avg = (arr, key) => {
     if (!arr.length) return 0;
     return Math.round(
       (arr.reduce((sum, e) => sum + (e[key] || 0), 0) / arr.length) * 10
     ) / 10;
   };
 
-   const avgTechnicalScore     = avg(evals, 'technicalScore');
+  const avgTechnicalScore     = avg(evals, 'technicalScore');
   const avgCommunicationScore = avg(evals, 'communicationScore');
   const avgDepthScore         = avg(evals, 'depthScore');
-
-  const overallScore = Math.round(
+  const overallScore          = Math.round(
     (avgTechnicalScore * 0.4 + avgCommunicationScore * 0.3 + avgDepthScore * 0.3) * 10
   ) / 10;
-         
-  const getPerformanceLabel = (score) => {
-    if (score >= 9)  return { label: 'Outstanding',  color: 'green'  };
-    if (score >= 7)  return { label: 'Strong',        color: 'teal'   };
-    if (score >= 5)  return { label: 'Developing',    color: 'amber'  };
-    if (score >= 3)  return { label: 'Needs Work',    color: 'orange' };
-    return                  { label: 'Beginning',     color: 'red'    };
-  };
- const updatedSession = await Session.findByIdAndUpdate(
+
+  const topicScoreMap = {};   
+
+  evals.forEach(evaluation => {
+    const question = session.questions[evaluation.questionIndex];
+    if (!question || !question.category) return;
+
+    const category = question.category.trim();
+    if (!topicScoreMap[category]) topicScoreMap[category] = [];
+    topicScoreMap[category].push(evaluation.overallScore || 0);
+  });
+
+  const weakTopics   = [];
+  const strongTopics = [];
+
+  Object.entries(topicScoreMap).forEach(([category, scores]) => {
+    const avgTopicScore = scores.reduce((s, n) => s + n, 0) / scores.length;
+
+    if (avgTopicScore >= 7.0) strongTopics.push(category);
+    if (avgTopicScore < 5.5)  weakTopics.push(category);
+  });
+
+  
+  const questionTypeCount = { technical: 0, behavioral: 0, systemDesign: 0 };
+  session.questions.forEach(q => {
+    if (q.type === 'technical')     questionTypeCount.technical++;
+    if (q.type === 'behavioral')    questionTypeCount.behavioral++;
+    if (q.type === 'system-design') questionTypeCount.systemDesign++;
+  });
+
+  // ── COMPUTE STORED DURATION ───────────────────────────────────────────────
+  const completedAt = new Date();
+  const storedDurationMinutes = Math.round(
+    (completedAt - session.startedAt) / 60000
+  );
+
+  // ── PERSIST EVERYTHING ───────────────────────────────────────────────────
+  const updatedSession = await Session.findByIdAndUpdate(
     sessionId,
     {
       status:                'completed',
@@ -158,12 +189,25 @@ exports.completeInterview = asyncHandler(async (req, res) => {
       avgTechnicalScore,
       avgCommunicationScore,
       avgDepthScore,
-      completedAt:           new Date(),
+      completedAt,
+      weakTopics,
+      strongTopics,
+      storedDurationMinutes,
+      questionTypeCount,
     },
     { new: true }
   );
 
-   res.status(200).json({
+  // ── PERFORMANCE LABEL ─────────────────────────────────────────────────────
+  const getPerformanceLabel = (score) => {
+    if (score >= 9) return { label: 'Outstanding', color: 'green'  };
+    if (score >= 7) return { label: 'Strong',      color: 'teal'   };
+    if (score >= 5) return { label: 'Developing',  color: 'amber'  };
+    if (score >= 3) return { label: 'Needs Work',  color: 'orange' };
+    return               { label: 'Beginning',   color: 'red'    };
+  };
+
+  res.status(200).json({
     success: true,
     data: {
       session:              updatedSession.toJSON(),
@@ -171,15 +215,16 @@ exports.completeInterview = asyncHandler(async (req, res) => {
       avgTechnicalScore,
       avgCommunicationScore,
       avgDepthScore,
+      weakTopics,
+      strongTopics,
       performance:          getPerformanceLabel(overallScore),
-      durationMinutes:      updatedSession.durationMinutes,
+      durationMinutes:      storedDurationMinutes,
       totalQuestions:       session.questions.length,
       answeredQuestions:    session.answers.length,
     },
     message: 'Interview completed successfully',
   });
 });
-
 exports.getSession = asyncHandler(async (req, res) => {
   const session = await Session.findOne({
     _id: req.params.id,
