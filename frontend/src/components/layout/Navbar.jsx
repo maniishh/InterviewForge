@@ -2,8 +2,9 @@ import { Link, useLocation } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 
 const NAV_LINKS = [
-  { path: '/setup', label: 'New Interview' },
-  { path: '/history', label: 'History' },
+  { path: '/setup',     label: 'New Interview' },
+  { path: '/analytics', label: 'Analytics'     },
+  { path: '/history',   label: 'History'       },
 ];
 
 const Navbar = () => {

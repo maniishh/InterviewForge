@@ -11,6 +11,8 @@ import Interview from './pages/Interview';
 import Feedback from './pages/Feedback';
 import History from './pages/History';
 import Spinner from './components/ui/Spinner';
+import Analytics from './pages/Analytics';
+
 
 const App = () => {
   const { isLoading } = useAuth();
@@ -69,6 +71,9 @@ const App = () => {
 
         <Route path="/" element={<Navigate to="/setup" replace />} />
         <Route path="*" element={<Navigate to="/setup" replace />} />
+        <Route path="/analytics" element={
+  <ProtectedRoute><Analytics /></ProtectedRoute>
+} />
       </Routes>
     </div>
   );
