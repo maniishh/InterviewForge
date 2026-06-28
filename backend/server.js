@@ -19,6 +19,7 @@ const errorHandler        = require('./middleware/errorHandler');
 const interviewRoutes = require('./routes/interviewRoutes');
 const historyRoutes = require('./routes/historyRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const roadmapRoutes = require('./routes/roadmapRoutes');
 
  
 const app = express();
@@ -55,6 +56,8 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/interviews', interviewRoutes);
 app.use('/api/v1/history', historyRoutes);
 app.use('/api/v1/analytics', analyticsRoutes);
+app.use('/api/v1/roadmap', roadmapRoutes);
+
 
 
  
