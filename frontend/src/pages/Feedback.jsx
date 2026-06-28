@@ -9,6 +9,7 @@ import ScoreRing from '../components/ui/ScoreRing';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
+import { Map } from 'lucide-react';
 
 const PERFORMANCE_CONFIG = {
   Outstanding: { color: '#00D9A3', bg: 'bg-success/10', border: 'border-success/20' },
@@ -260,6 +261,14 @@ const Feedback = () => {
           >
             View History
           </Button>
+          <Button
+  variant="secondary"
+  className="flex-1"
+  leftIcon={<Map size={16} />}
+  onClick={() => navigate('/roadmap')}
+>
+  View Roadmap
+</Button>
         </div>
       </div>
     </div>

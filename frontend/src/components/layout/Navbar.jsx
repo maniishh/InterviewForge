@@ -4,6 +4,7 @@ import useAuth from '../../hooks/useAuth';
 const NAV_LINKS = [
   { path: '/setup',     label: 'New Interview' },
   { path: '/analytics', label: 'Analytics'     },
+  { path: '/roadmap',   label: 'Roadmap'       },
   { path: '/history',   label: 'History'       },
 ];
 
