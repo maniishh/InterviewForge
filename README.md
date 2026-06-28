@@ -1,137 +1,277 @@
 # 🚀 AI Interview Preparation Platform
 
-An intelligent mock interview platform that simulates real technical interviews, evaluates candidate responses using AI, and provides detailed feedback to improve interview performance.
+An intelligent AI-powered mock interview platform that simulates real technical interviews, evaluates candidate responses using AI, and provides detailed structured feedback to improve interview performance.
 
 ---
 
 ## 📌 Overview
 
-Preparing for technical interviews is difficult because most candidates lack:
+Technical interview preparation is difficult because candidates often lack:
 
-* Real interview simulation
-* Instant personalized feedback
-* Company-specific preparation
-* Performance tracking over time
+- Real interview simulation  
+- Instant personalized feedback  
+- Company-specific preparation  
+- Performance tracking over time  
 
-This platform solves that by creating an AI-powered interview environment where users can practice technical interviews, receive structured evaluation, and improve continuously.
+This platform solves these problems by creating a production-grade AI interview environment where users can practice technical interviews, receive structured evaluation, and continuously improve.
 
 ---
 
 ## ✨ Key Features
 
 ### 🔐 Authentication System
-
-* User Signup/Login
-* JWT-based Authentication
-* Protected Routes
+- User Signup/Login
+- JWT-based Authentication
+- Protected Routes
+- Secure Password Hashing using Bcrypt
 
 ### 🎯 Smart Interview Generation
-
-* Select Company (Google, Amazon, Microsoft, etc.)
-* Select Role (SDE, Backend, Frontend)
-* Select Difficulty Level
+Users can configure interviews based on:
+- Company (Google, Amazon, Microsoft, etc.)
+- Role (SDE, Backend, Frontend)
+- Difficulty Level
+- Number of Questions
 
 AI generates tailored technical interview questions.
 
 ### 🤖 AI Evaluation Engine
-
 Each submitted answer is evaluated on:
 
-* Technical Accuracy
-* Communication Skills
-* Depth of Explanation
-* Problem-Solving Approach
+- Technical Accuracy  
+- Communication Skills  
+- Depth of Explanation  
+- Problem-Solving Approach  
 
 ### 📊 Performance Analytics
-
-* Interview History
-* Score Tracking
-* Progress Monitoring
-* Improvement Suggestions
+- Interview History  
+- Score Tracking  
+- Progress Monitoring  
+- Improvement Suggestions  
 
 ### 🧠 AI Feedback System
-
 Detailed feedback includes:
-
-* Strengths
-* Weaknesses
-* Missing Concepts
-* Improvement Recommendations
+- Strengths
+- Weaknesses
+- Missing Concepts
+- Improvement Recommendations
 
 ---
 
-## 🏗️ System Architecture
+# 🏛 High-Level Architecture
 
-```txt
-Frontend (React + Tailwind)
-        |
-        v
-Backend API (Node + Express)
-        |
-        |
-   -------------------
-   |                 |
-   v                 v
-MongoDB         AI Engine
-Database     (OpenAI/Gemini)
+The platform follows a modular service-oriented architecture designed for scalability, maintainability, and reliable AI response handling.
+
+```text
+Client (React)
+    │
+    ▼
+API Gateway (Express Middleware)
+(Auth • Validation • Rate Limiting)
+    │
+    ▼
+Core Services
+├── Auth Service
+├── Interview Service
+├── Evaluation Service
+└── Analytics Service
+    │
+    ▼
+Data Layer + AI Layer
+├── MongoDB Atlas
+├── OpenAI / Gemini
+└── Future: Vector DB + Embeddings (RAG)
 ```
 
 ---
 
-## 🛠️ Tech Stack
+# ⚙️ Question Generation Pipeline
 
-### Frontend
+The interview generation pipeline ensures structured, role-specific, and company-specific technical questions.
 
-* React.js
-* Tailwind CSS
-* Axios
-* React Router
+```text
+Step 1 → User Input
+(company, role, difficulty, questionCount)
 
-### Backend
+Step 2 → Prompt Builder
+- System Prompt
+- Rules
+- Output Schema
 
-* Node.js
-* Express.js
-* JWT Authentication
-* Bcrypt
+Step 3 → AI Service Call
+Gemini / OpenAI
+temperature: 0.8
+response format: JSON
 
-### Database
+Step 4 → Raw AI Response
+(question payload)
 
-* MongoDB
-* Mongoose
+Step 5 → Response Parser
+- Strip markdown
+- Extract JSON
+- Validate schema
+- Sanitize output
 
-### AI Integration
-
-* OpenAI API / Gemini API
-
-### Deployment
-
-* Vercel
-* Render
-* MongoDB Atlas
+Step 6 → Session Creation
+Store structured interview session in MongoDB
+```
 
 ---
 
-## 📂 Project Structure
+# 🧠 Answer Evaluation Pipeline
+
+Every candidate answer goes through a structured AI evaluation pipeline.
+
+```text
+Input → POST /interviews/:id/submit
+
+1. Build Evaluation Prompt
+   - Question context
+   - Rubric
+   - Scoring schema
+
+2. AI Evaluation Call
+   Model: Gemini / OpenAI
+   Temperature: 0.3
+
+3. Multi-Dimensional Scoring
+   - Technical Accuracy
+   - Communication
+   - Depth of Explanation
+   - Problem Solving
+
+4. Response Parsing
+   - Validate scores
+   - Clamp scores (0–10)
+   - Sanitize output
+
+5. Store Evaluation
+   Push result to session.evaluations[]
+```
+
+---
+
+# 🏗 Backend Architecture
+
+The backend follows a layered architecture with clear separation of concerns.
+
+```text
+Client
+  │
+  ▼
+Routes Layer
+  │
+  ▼
+Middleware Layer
+(auth + validation + aiLimiter)
+  │
+  ▼
+Controller Layer
+(interviewController)
+  │
+  ▼
+Service Layer
+(aiService)
+  │
+  ├── promptBuilder
+  ├── responseParser
+  └── AI Provider (Gemini/OpenAI)
+```
+
+---
+
+## 🛠 Tech Stack
+
+### Frontend
+- React.js
+- Tailwind CSS
+- Axios
+- React Router
+
+### Backend
+- Node.js
+- Express.js
+- JWT Authentication
+- Bcrypt
+
+### Database
+- MongoDB
+- Mongoose
+
+### AI Integration
+- OpenAI API / Gemini API
+
+### Deployment
+- Vercel
+- Render
+- MongoDB Atlas
+
+---
+
+# 📂 Core Backend Modules
 
 ```bash
-ai-interview-platform/
+backend/
+├── controllers/
+│   └── interviewController.js
 │
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   ├── context/
-│   │   └── App.js
+├── services/
+│   └── aiService.js
 │
-├── backend/
-│   ├── controllers/
-│   ├── routes/
-│   ├── models/
-│   ├── middleware/
-│   ├── utils/
-│   ├── config/
-│   └── server.js
+├── utils/
+│   ├── promptBuilder.js
+│   └── responseParser.js
+│
+├── models/
+│   └── Session.js
+│
+├── routes/
+│   └── interviewRoutes.js
+```
+
+---
+
+# 🗄 Session Data Model
+
+```javascript
+{
+  userId,
+  company,
+  jobRole,
+  difficulty,
+  status,
+
+  questions: [
+    {
+      text,
+      type,
+      category,
+      orderIndex
+    }
+  ],
+
+  answers: [
+    {
+      questionIndex,
+      answerText,
+      submittedAt
+    }
+  ],
+
+  evaluations: [
+    {
+      questionIndex,
+      scores: {
+        technical,
+        communication,
+        depth,
+        overall
+      },
+      feedback,
+      strengths,
+      improvements
+    }
+  ]
+}
 ```
 
 ---
@@ -184,31 +324,24 @@ npm start
 ## 🔄 Workflow
 
 ### Step 1
-
 User logs in
 
 ### Step 2
-
 User selects:
-
-* Company
-* Role
-* Difficulty
+- Company
+- Role
+- Difficulty
 
 ### Step 3
-
-AI generates interview question
+AI generates interview questions
 
 ### Step 4
-
 User submits answer
 
 ### Step 5
-
 AI evaluates answer
 
 ### Step 6
-
 Results stored in database
 
 ---
@@ -233,43 +366,38 @@ GET  /api/interview/history
 
 ---
 
-## 🧠 AI Evaluation Metrics
+# 🔥 Engineering Highlights
 
-| Metric             | Description             |
-| ------------------ | ----------------------- |
-| Technical Accuracy | Correctness of answer   |
-| Communication      | Clarity and explanation |
-| Depth              | Concept understanding   |
-| Problem Solving    | Logical thinking        |
-
----
-
-## 🔥 Technical Highlights
-
-* Scalable MERN architecture
-* AI-powered dynamic question generation
-* AI-based evaluation engine
-* Secure JWT authentication
-* Modular backend architecture
-* Production-ready error handling
+- Modular service-oriented backend architecture  
+- AI orchestration pipeline with prompt engineering  
+- Structured JSON schema enforcement for AI outputs  
+- Robust response parsing and sanitization  
+- Multi-dimensional evaluation engine  
+- Analytics-ready session data modeling  
+- Production-grade validation and error handling  
+- Rate limiting for AI API protection  
 
 ---
 
-## 🚀 Future Improvements
-
-* Voice-based interviews
-* Real-time video interviews
-* Speech-to-text integration
-* RAG-based company-specific preparation
-* Personalized learning roadmap
-
----
 ## 💡 Challenges Solved
 
-* Designing scalable backend architecture
-* Creating structured AI prompts
-* Building AI-based evaluation system
-* Managing interview history and analytics
+- Designing scalable backend architecture  
+- Building AI orchestration pipeline  
+- Creating structured prompts for reliable outputs  
+- Handling AI response parsing and sanitization  
+- Designing analytics-ready data model  
+
+---
+
+# 🚀 Scalability Enhancements (Future Scope)
+
+- Redis caching for repeated prompt responses  
+- Queue-based AI evaluation using BullMQ  
+- WebSocket-based live interview sessions  
+- Voice-based interview mode  
+- Speech-to-text integration  
+- RAG-based company-specific preparation  
+- Distributed analytics processing  
 
 ---
 
@@ -277,17 +405,18 @@ GET  /api/interview/history
 
 This project demonstrates strong understanding of:
 
-* Full Stack Development
-* REST APIs
-* Authentication
-* Database Design
-* AI Integration
-* Scalable System Architecture
+- Full Stack Development  
+- REST APIs  
+- Authentication  
+- Database Design  
+- AI Integration  
+- Backend Architecture  
+- Scalable System Design  
 
 ---
 
 ## 👨‍💻 Author
 
-Manish Kumar Yadav
-Electrical Engineering | NIT Jamshedpur
+**Manish Kumar Yadav**  
+Electrical Engineering | NIT Jamshedpur  
 Aspiring Software Engineer
