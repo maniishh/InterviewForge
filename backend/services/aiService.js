@@ -23,6 +23,9 @@ class AIService {
       throw new Error(`Unknown AI_PROVIDER: ${env.AI_PROVIDER}`);
     }
     console.log(`✅  AI Service initialised with provider: ${this.provider}`);
+    console.log("Provider:", env.AI_PROVIDER);
+console.log("Key exists:", !!env.GEMINI_API_KEY);
+console.log("Key prefix:", env.GEMINI_API_KEY?.slice(0,6));
   }
 
 
@@ -30,10 +33,10 @@ class AIService {
 async callGemini(messages, options = {}) {
   const maxRetries = 3;
   const delays     = [5000, 15000, 30000]; 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const model = this.gemini.getGenerativeModel({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.5-flash',
         generationConfig: {
           temperature:      options.temperature ?? 0.7,
           maxOutputTokens:  options.max_tokens  ?? 2000,
@@ -41,19 +44,26 @@ async callGemini(messages, options = {}) {
         },
       });
 
-      const systemMessage = messages.find(m => m.role === 'system');
-      const userMessages  = messages.filter(m => m.role !== 'system');
+      // const systemMessage = messages.find(m => m.role === 'system');
+      // const userMessages  = messages.filter(m => m.role !== 'system');
 
-      const chat = model.startChat({
-        systemInstruction: systemMessage
-          ? { parts: [{ text: systemMessage.content }] }
-          : undefined,
-        history: [],
-      });
+      // const chat = model.startChat({
+      //   systemInstruction: systemMessage
+      //     ? { parts: [{ text: systemMessage.content }] }
+      //     : undefined,
+      //   history: [],
+      // });
 
-      const lastUserMessage = userMessages[userMessages.length - 1];
-      const result = await chat.sendMessage(lastUserMessage.content);
-      return result.response.text();
+      // const lastUserMessage = userMessages[userMessages.length - 1];
+      // const result = await chat.sendMessage(lastUserMessage.content);
+      // return result.response.text();
+      const prompt = messages
+  .map(m => `${m.role.toUpperCase()}:\n${m.content}`)
+  .join("\n\n");
+
+const result = await model.generateContent(prompt);
+const response = await result.response;
+return response.text();
 
     } catch (error) {
   console.log("===== GEMINI ERROR =====");
@@ -155,9 +165,10 @@ async callGemini(messages, options = {}) {
 
     const raw = await this.call(messages, {
       temperature: 0.8,
-      max_tokens:  700,
+      max_tokens:  3000,
     });
-
+   console.log("RAW AI RESPONSE:");
+console.log(raw);
     return responseParser.parseQuestions(raw);
   }
   // services/aiService.js — replace mock evaluateAnswer block
