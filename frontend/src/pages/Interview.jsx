@@ -1,25 +1,26 @@
-// src/pages/Interview.jsx
-import { useState, useEffect, useRef } from 'react';
+// frontend/src/pages/Interview.jsx
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ChevronLeft, ChevronRight, Send, CheckCircle2,
+  ChevronLeft, ChevronRight, CheckCircle2,
   Clock, AlertCircle, Lightbulb, Flag
 } from 'lucide-react';
-import useInterview from '../hooks/useInterview';
-import Button from '../components/ui/Button';
-import Card from '../components/ui/Card';
-import Badge from '../components/ui/Badge';
-import ScoreRing from '../components/ui/ScoreRing';
+import useInterview    from '../hooks/useInterview';
+import Card            from '../components/ui/Card';
+import Badge           from '../components/ui/Badge';
+import ScoreRing       from '../components/ui/ScoreRing';
+import Button          from '../components/ui/Button';
+import VoiceAnswerInput from '../components/voice/VoiceAnswerInput';
 
 const TYPE_CONFIG = {
-  technical:      { label: 'Technical',     color: 'technical',     hint: 'Focus on correctness, complexity, and edge cases.' },
-  behavioral:     { label: 'Behavioral',    color: 'behavioral',    hint: 'Use the STAR format: Situation, Task, Action, Result.' },
-  'system-design':{ label: 'System Design', color: 'system-design', hint: 'Clarify requirements, then design for scale and reliability.' },
+  technical:       { label: 'Technical',     color: 'technical',     hint: 'Focus on correctness, complexity, and edge cases.' },
+  behavioral:      { label: 'Behavioral',    color: 'behavioral',    hint: 'Use the STAR format: Situation, Task, Action, Result.' },
+  'system-design': { label: 'System Design', color: 'system-design', hint: 'Clarify requirements, then design for scale and reliability.' },
 };
 
 const Interview = () => {
-  const navigate  = useNavigate();
-  const textareaRef = useRef(null);
+  const navigate = useNavigate();
+
   const {
     questions, currentIndex, currentQuestion, currentAnswer,
     currentEvaluation, isLastQuestion, answeredCount, allAnswered,
@@ -28,41 +29,41 @@ const Interview = () => {
     sessionId,
   } = useInterview();
 
-  const [draft,       setDraft]       = useState('');
   const [submitted,   setSubmitted]   = useState(false);
   const [timeSeconds, setTimeSeconds] = useState(0);
 
-  
- useEffect(() => {
-  
-  const saved = sessionStorage.getItem('interviewforge_session');
-  if (!sessionId && !saved && questions.length === 0) {
-    navigate('/setup');
-  }
-}, []); 
+  // Redirect if no active session
+  useEffect(() => {
+    const saved = sessionStorage.getItem('interviewforge_session');
+    if (!sessionId && !saved && questions.length === 0) {
+      navigate('/setup');
+    }
+  }, []);
 
-  /* Timer */
+  // Timer
   useEffect(() => {
     const t = setInterval(() => setTimeSeconds(s => s + 1), 1000);
     return () => clearInterval(t);
   }, []);
 
-  /* Reset draft when question changes */
+  // Reset submitted state when question changes
   useEffect(() => {
-    setDraft(currentAnswer || '');
     setSubmitted(!!currentEvaluation);
-    textareaRef.current?.focus();
-  }, [currentIndex, currentAnswer, currentEvaluation]);
+  }, [currentIndex, currentEvaluation]);
 
   const formatTime = (s) => {
-    const m = Math.floor(s / 60);
+    const m   = Math.floor(s / 60);
     const sec = s % 60;
     return `${m}:${sec.toString().padStart(2, '0')}`;
   };
 
-  const handleSubmit = async () => {
-    if (!draft.trim() || submitted) return;
-    const result = await submitAnswer(draft);
+  /*
+   * handleAnswer — called by VoiceAnswerInput when user confirms answer.
+   * Works identically whether the answer came from voice or text input.
+   * The transcript/text is passed as answerText to the backend.
+   */
+  const handleAnswer = async (answerText) => {
+    const result = await submitAnswer(answerText);
     if (result) setSubmitted(true);
   };
 
@@ -122,14 +123,11 @@ const Interview = () => {
                 Q{currentIndex + 1}
               </span>
             </div>
-            <div className="flex-1">
-              <p className="text-lg font-semibold text-text-primary leading-relaxed">
-                {currentQuestion.text}
-              </p>
-            </div>
+            <p className="text-lg font-semibold text-text-primary leading-relaxed">
+              {currentQuestion.text}
+            </p>
           </div>
 
-          {/* Hint */}
           <div className="mt-4 p-3 rounded-lg bg-elevated border border-border
                           flex items-start gap-2">
             <Lightbulb size={14} className="text-warning flex-shrink-0 mt-0.5" />
@@ -137,69 +135,14 @@ const Interview = () => {
           </div>
         </Card>
 
-        {/* ── ANSWER AREA ── */}
+        {/* ── VOICE ANSWER INPUT ── */}
         <Card className="p-6 mb-6 animate-slide-up">
-          <div className="flex items-center justify-between mb-3">
-            <label className="text-sm font-semibold text-text-primary">
-              Your Answer
-            </label>
-            <span className={`text-xs font-mono transition-colors
-                             ${draft.length > 4500 ? 'text-danger' : 'text-text-muted'}`}>
-              {draft.length} / 5000
-            </span>
-          </div>
-
-          <textarea
-            ref={textareaRef}
-            value={draft}
-            onChange={e => setDraft(e.target.value)}
+          <VoiceAnswerInput
+            onAnswer={handleAnswer}
+            isSubmitting={isSubmitting}
+            questionIndex={currentIndex}
             disabled={submitted}
-            rows={8}
-            maxLength={5000}
-            placeholder={
-              currentQuestion.type === 'behavioral'
-                ? 'Describe the Situation → Task → Action → Result...'
-                : currentQuestion.type === 'system-design'
-                ? 'Start with requirements, then high-level design, then components...'
-                : 'Explain your approach, algorithm, and complexity...'
-            }
-            className={`
-              w-full bg-elevated border border-border rounded-xl px-4 py-3
-              text-text-primary placeholder-text-muted text-sm font-sans
-              resize-none outline-none transition-all duration-200 leading-relaxed
-              ${submitted
-                ? 'opacity-60 cursor-not-allowed'
-                : 'focus:border-accent focus:ring-2 focus:ring-accent/10'
-              }
-            `}
           />
-
-          {/* Submit button */}
-          {!submitted && (
-            <div className="flex items-center justify-between mt-4">
-              <p className="text-xs text-text-muted">
-                {draft.trim().length < 20 && draft.length > 0
-                  ? '⚠ Add more detail for a better evaluation'
-                  : draft.trim() ? '✓ Ready to evaluate' : 'Write your answer above'}
-              </p>
-              <Button
-                onClick={handleSubmit}
-                isLoading={isSubmitting}
-                loadingText="Evaluating..."
-                disabled={!draft.trim() || isSubmitting}
-                leftIcon={<Send size={14} />}
-              >
-                Submit & Evaluate
-              </Button>
-            </div>
-          )}
-
-          {submitted && (
-            <div className="flex items-center gap-2 mt-3 text-success text-sm">
-              <CheckCircle2 size={16} />
-              Answer submitted — see feedback below
-            </div>
-          )}
         </Card>
 
         {/* ── EVALUATION PANEL ── */}
@@ -210,7 +153,6 @@ const Interview = () => {
               <h3 className="font-semibold text-text-primary">AI Evaluation</h3>
             </div>
 
-            {/* Score rings */}
             <div className="grid grid-cols-4 gap-4 mb-6 pb-6 border-b border-border">
               <ScoreRing score={currentEvaluation.technicalScore     || 0} size={90} label="Technical" />
               <ScoreRing score={currentEvaluation.communicationScore || 0} size={90} label="Communication" />
@@ -218,12 +160,11 @@ const Interview = () => {
               <ScoreRing score={currentEvaluation.overallScore       || 0} size={90} label="Overall" />
             </div>
 
-            {/* Feedback sections */}
             <div className="space-y-4">
               {[
-                { icon: AlertCircle, label: 'Feedback',     color: '#6C63FF', text: currentEvaluation.feedback },
-                { icon: CheckCircle2,label: 'Strengths',    color: '#00D9A3', text: currentEvaluation.strengths },
-                { icon: Lightbulb,   label: 'Improvements', color: '#FFB547', text: currentEvaluation.improvements },
+                { icon: AlertCircle,  label: 'Feedback',     color: '#6C63FF', text: currentEvaluation.feedback },
+                { icon: CheckCircle2, label: 'Strengths',    color: '#00D9A3', text: currentEvaluation.strengths },
+                { icon: Lightbulb,    label: 'Improvements', color: '#FFB547', text: currentEvaluation.improvements },
               ].map(({ icon: Icon, label, color, text }) => text && (
                 <div key={label} className="flex items-start gap-3">
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
@@ -232,9 +173,7 @@ const Interview = () => {
                   </div>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider mb-1"
-                       style={{ color }}>
-                      {label}
-                    </p>
+                       style={{ color }}>{label}</p>
                     <p className="text-sm text-text-muted leading-relaxed">{text}</p>
                   </div>
                 </div>
@@ -271,11 +210,9 @@ const Interview = () => {
                 key={i}
                 className="w-2 h-2 rounded-full transition-all duration-300"
                 style={{
-                  background: i === currentIndex
-                    ? '#6C63FF'
-                    : i < currentIndex
-                    ? '#00D9A3'
-                    : '#1E1E2E',
+                  background: i === currentIndex ? '#6C63FF'
+                            : i < currentIndex  ? '#00D9A3'
+                            : '#1E1E2E',
                   transform: i === currentIndex ? 'scale(1.3)' : 'scale(1)',
                 }}
               />
@@ -289,7 +226,7 @@ const Interview = () => {
                 isLoading={isCompleting}
                 loadingText="Finishing..."
                 leftIcon={<Flag size={16} />}
-                className="bg-success hover:bg-success/80"
+                style={{ background: '#00D9A3' }}
               >
                 Finish Interview
               </Button>
